@@ -19,6 +19,7 @@ def norm(vec):
 
 
 def cosine_similarity(vec1, vec2):
+    #kind of not efficient... could be better? LMAO I JUST REALIZED THERE'S ALRADY A NORM FUNCTION
     vector_1 = []
     vector_2 = []
     vecta1 = []
@@ -58,9 +59,40 @@ def build_semantic_descriptors(sentences):
 
     return word_occ
 
+def split_into_sentences(text):
+    sentences = []
+    current = ""
+
+    for char in text:
+        if char in ".?!":
+            if current.strip(): #avoiding empty sentences
+                sentences.append(current.strip().split())
+
+            current = ""
+        else:
+            current += char
+    
+    return sentences
+
 
 def build_semantic_descriptors_from_files(filenames):
-    pass
+    #THIS IS NOT FINISHED OR TESTED!!! NEEDS WORK
+    punctuation_to_remove = [",", "-", "--", ":", ";"]
+    #seperators = [".", "!", "?"]
+
+    file_contents = {}
+    for filename in filenames:
+        with open(filename, "r", encoding="latin1") as f:
+            file_contents[filename] = f.read()
+    
+    for value in file_contents.values():
+        for punc in punctuation_to_remove:
+            value = value.replace(punc,"") #removing non essential punctuation
+        
+        value = split_into_sentences(value)
+
+    #for value in file_contents.values():
+    #    words = value.split() -> previous attempt
 
 
 
@@ -74,5 +106,10 @@ def run_similarity_test(filename, semantic_descriptors, similarity_fn):
 
 weirdo = [["i", "am", "a", "sick", "man"], ["i", "am", "a", "spiteful", "man"], ["i", "am", "an", "unattractive", "man"], ["i", "believe", "my", "liver", "is", "diseased"], ["however", "i", "know", "nothing", "at", "all", "about", "my", "disease", "and", "do", "not", "know", "for", "certain", "what", "ails", "me"]]
 
-print(cosine_similarity({"a": 1, "b": 2, "c": 3}, {"b": 4, "c": 5, "d": 6}))
-print(build_semantic_descriptors(weirdo))
+
+if __name__ == '__main__':
+
+    #function tests
+    print(cosine_similarity({"a": 1, "b": 2, "c": 3}, {"b": 4, "c": 5, "d": 6})) # shuld be ~0.70
+    print(build_semantic_descriptors(weirdo)) # should be really long idk
+    print(split_into_sentences("This is a sentence. This is another sentence. Genshin gooners are crazy! What the hell?")) #should look like weirdo
