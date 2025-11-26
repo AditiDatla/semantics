@@ -4,7 +4,6 @@ Author: Michael Guerzhoy. Last modified: Nov. 20, 2023.
 '''
 
 import math
-import numpy as np
 
 def norm(vec):
     '''Return the norm of a vector stored as a dictionary, as 
@@ -19,29 +18,17 @@ def norm(vec):
 
 
 def cosine_similarity(vec1, vec2):
-    #kind of not efficient... could be better? LMAO I JUST REALIZED THERE'S ALRADY A NORM FUNCTION
-    vector_1 = []
-    vector_2 = []
-    vecta1 = []
-    vecta2 = []
+    # dot product over matching keys I FIXED IT TO USE CRAP RIGHT
+    dot = 0.0
+    for k, v in vec1.items():
+        if k in vec2:
+            dot += v * vec2[k]
 
-    for key, value in vec1.items():
-        vecta1.append(value)
-        if key in vec2:
-            vector_1.append(value)
-    for key, value in vec2.items():
-        vecta2.append(value)
-        if key in vec1:
-            vector_2.append(value)
-    
-    dot_product = np.dot(vector_1, vector_2)
-
-    vector_1_mag = np.linalg.norm(vecta1)
-    vector_2_mag = np.linalg.norm(vecta2)
-
-
-    #return vector_2_mag*vector_1_mag
-    return (dot_product/(vector_1_mag*vector_2_mag))
+    n1 = norm(vec1)
+    n2 = norm(vec2)
+    if n1 == 0 or n2 == 0:
+        return -1.0
+    return dot / (n1 * n2)
 
 def build_semantic_descriptors(sentences):
     word_occ = {}
@@ -74,34 +61,77 @@ def split_into_sentences(text):
     
     return sentences
 
-
 def build_semantic_descriptors_from_files(filenames):
-    #THIS IS NOT FINISHED OR TESTED!!! NEEDS WORK
     punctuation_to_remove = [",", "-", "--", ":", ";"]
-    #seperators = [".", "!", "?"]
+    descriptors = {}
 
-    file_contents = {}
+    file_text = ""
     for filename in filenames:
         with open(filename, "r", encoding="latin1") as f:
-            file_contents[filename] = f.read()
-    
-    for value in file_contents.values():
-        for punc in punctuation_to_remove:
-            value = value.replace(punc,"") #removing non essential punctuation
-        
-        value = split_into_sentences(value)
+            file_text += " " + f.read().lower()
 
-    #for value in file_contents.values():
-    #    words = value.split() -> previous attempt
+    # Remove non-essential punctuation
+    for p in punctuation_to_remove:
+        file_text = file_text.replace(p, " ")
 
+    sentences = split_into_sentences(file_text)
+
+    for sentence in sentences:
+        unique_words = set(sentence)
+        for w in unique_words:
+            if w not in descriptors:
+                descriptors[w] = {}
+            for other in unique_words:
+                if other == w:
+                    continue
+                descriptors[w][other] = descriptors[w].get(other, 0) + 1
+
+    return descriptors
 
 
 def most_similar_word(word, choices, semantic_descriptors, similarity_fn):
-    pass
+    best_choice = choices[0]
+    best_sim = -1
+
+    for i in range(len(choices)):
+        choice = choices[i]
+
+        if word not in semantic_descriptors or choice not in semantic_descriptors:
+            sim = -1
+        else:
+            sim = similarity_fn(semantic_descriptors[word], semantic_descriptors[choice])
+
+        if sim > best_sim:
+            best_sim = sim
+            best_choice = choice
+    
+    return best_choice
 
 
 def run_similarity_test(filename, semantic_descriptors, similarity_fn):
-    pass
+    total = 0
+    correct = 0
+
+    with open(filename, "r", encoding="latin1") as f:
+        for line in f:
+            parts = line.split()
+
+            word = parts[0]
+            answer = parts[1]
+            options = parts[2:]
+
+            guess = most_similar_word(word, options, semantic_descriptors, similarity_fn)
+
+            total += 1
+            if guess == answer:
+                correct += 1
+
+    
+    if total == 0:
+        return 0.0
+    else:
+        return ((correct / total) * 100.0)
+
 
 
 weirdo = [["i", "am", "a", "sick", "man"], ["i", "am", "a", "spiteful", "man"], ["i", "am", "an", "unattractive", "man"], ["i", "believe", "my", "liver", "is", "diseased"], ["however", "i", "know", "nothing", "at", "all", "about", "my", "disease", "and", "do", "not", "know", "for", "certain", "what", "ails", "me"]]
@@ -109,7 +139,19 @@ weirdo = [["i", "am", "a", "sick", "man"], ["i", "am", "a", "spiteful", "man"], 
 
 if __name__ == '__main__':
 
+    word_of_choice = "man"
+    mychoices = ['i', 'am', 'a']
+    my_descriptors = build_semantic_descriptors(weirdo)
+
     #function tests
     print(cosine_similarity({"a": 1, "b": 2, "c": 3}, {"b": 4, "c": 5, "d": 6})) # shuld be ~0.70
     print(build_semantic_descriptors(weirdo)) # should be really long idk
     print(split_into_sentences("This is a sentence. This is another sentence. Genshin gooners are crazy! What the hell?")) #should look like weirdo
+    #print(build_semantic_descriptors_from_files(myfile)) #holy guacamole be careful running this
+    print(most_similar_word(word_of_choice, mychoices, my_descriptors, cosine_similarity)) #I think a is right? but idk ngl
+
+    sem_descriptors = build_semantic_descriptors_from_files(['semanticssubject1.txt', 'semanticssubject2.txt']) 
+    res = run_similarity_test('testytesty.txt', sem_descriptors, cosine_similarity) 
+    print(res, "% of the guesses were correct") #we are at 70% rn..... could be better ehehehe
+
+
