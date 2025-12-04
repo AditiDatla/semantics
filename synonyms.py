@@ -13,7 +13,7 @@ import math
 
 #normalize the vector
 def norm(vec):
-    '''Return the Euclidean norm of a sparse vector stored as a dictionary.'''
+    '''Return the Euclidean norm of a vector stored as a dictionary.'''
     sum_of_squares = 0.0  
     #calculate sum of squares for each value in the dict
     for x in vec:
@@ -40,7 +40,7 @@ def cosine_similarity(vec1, vec2):
 
 #builds a dictionary of unique words from each "sentence" from the lists of words in sentences
 def build_semantic_descriptors(sentences):
-    '''Build and return co-occurrence semantic descriptors from a list of tokenized sentences.'''
+    '''Build and return semantic descriptors from a list of tokenized sentences.'''
     word_occ = {}
 
     for sentence in sentences:
@@ -59,19 +59,19 @@ def build_semantic_descriptors(sentences):
             if w1 not in word_occ:
                 word_occ[w1] = {}
 
-            for j in range(i+1, L):
-                w2 = unique[j]
-                if w2 not in word_occ:
-                    word_occ[w2] = {}
+            for j in range(i+1,L):
+                    w2 = unique[j]
+                    if w2 not in word_occ:
+                        word_occ[w2] = {}
                     
-                word_occ[w1][w2] = word_occ[w1].get(w2, 0) + 1
-                word_occ[w2][w1] = word_occ[w2].get(w1, 0) + 1
+                    word_occ[w1][w2] = word_occ[w1].get(w2, 0) + 1
+                    word_occ[w2][w1] = word_occ[w2].get(w1, 0) + 1
 
     return word_occ
 
 #split text into sentences based on punctuation
 def split_into_sentences(text):
-    '''Split raw text into a list of tokenized sentences using punctuation as delimiters.'''
+    '''Split the given full text into sentences tokenized into word lists.'''
     sentences = []
     current = ""
 
@@ -91,7 +91,7 @@ def split_into_sentences(text):
 
 #build a dictionary of unique words from files
 def build_semantic_descriptors_from_files(filenames):
-    '''Build semantic descriptors from multiple text files by preprocessing and combining them.'''
+    '''Build semantic descriptors by reading and processing multiple text files.'''
     punctuation_to_remove = [",", "-", "--", ":", ";", "(", ")", "[", "]", "\"", "'", "/", "_", "*"]
     descriptors = {}
 
@@ -101,12 +101,9 @@ def build_semantic_descriptors_from_files(filenames):
         with open(filename, "r", encoding="latin1") as f:
             file_text += " " + f.read().lower()
 
-    # Remove non-essential punctuation and normalize spacing   <-- added clarifying comment
+    # Remove non-essential punctuation
     for p in punctuation_to_remove:
         file_text = file_text.replace(p, " ")
-    
-    file_text = file_text.replace("-", " ")
-    file_text = file_text.replace("--", " ")
 
     #split text into sentences and build semantic descriptors
     sentences = split_into_sentences(file_text)
@@ -116,7 +113,7 @@ def build_semantic_descriptors_from_files(filenames):
 
 #find the most similar word from the choices based on the similarity function
 def most_similar_word(word, choices, semantic_descriptors, similarity_fn):
-    '''Return the choice word most semantically similar to the given word.'''
+    '''Return the choice word most similar to the target word.'''
     #initialize best choice and similarity
     best_choice = choices[0]
     best_sim = -1
@@ -140,7 +137,7 @@ def most_similar_word(word, choices, semantic_descriptors, similarity_fn):
 
 #run similarity test on the given file
 def run_similarity_test(filename, semantic_descriptors, similarity_fn):
-    '''Run a similarity test file and return the percentage of correct answers.'''
+    '''Run a semantic similarity test file and return the percentage correct.'''
     total = 0
     correct = 0
 
@@ -148,6 +145,10 @@ def run_similarity_test(filename, semantic_descriptors, similarity_fn):
     with open(filename, "r", encoding="latin1") as f:
         for line in f:
             parts = line.split()
+
+            #skip blank or malformed lines (prevents IndexError)
+            if len(parts) < 3:
+                continue
 
             #extract the word, answer, and options from the line
             word = parts[0]
@@ -182,5 +183,3 @@ if __name__ == '__main__':
     sem_descriptors = build_semantic_descriptors_from_files(['semanticssubject1.txt', 'semanticssubject2.txt']) 
     res = run_similarity_test('testytesty.txt', sem_descriptors, cosine_similarity) 
     print(res, "% of the guesses were correct") #percantage should be between 67.5% and 72.5%
-
-

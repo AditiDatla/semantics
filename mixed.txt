@@ -1,0 +1,2 @@
+word a a b c
+word b a b c
