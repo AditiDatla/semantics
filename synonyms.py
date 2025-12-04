@@ -1,15 +1,19 @@
-'''Semantic Similarity: starter code
+'''
 
-Author: Michael Guerzhoy. Last modified: Nov. 20, 2023.
+Title: Semantic Similarity
+
+Author: Aditi Datla, Helen Huang, and Michael Guerzhoy. Last modified: December 4th, 2025
+
+Description: This program constructs semantic descriptors from text, computes cosine similarity 
+between word vectors, and evaluates semantic similarity through test files.
+
 '''
 
 import math
 
 #normalize the vector
 def norm(vec):
-    '''Return the norm of a vector stored as a dictionary, as 
-    described in the handout for Project 3.
-    '''
+    '''Return the Euclidean norm of a sparse vector stored as a dictionary.'''
     sum_of_squares = 0.0  
     #calculate sum of squares for each value in the dict
     for x in vec:
@@ -19,6 +23,7 @@ def norm(vec):
 
 #compute the dot product of each vector using the normalized values and return cosine similarity
 def cosine_similarity(vec1, vec2):
+    '''Return the cosine similarity between two semantic descriptor vectors.'''
     # dot product over matching keys
     dot = 0.0
     # iterate through the keys (unqiue words) in the given vector
@@ -35,25 +40,38 @@ def cosine_similarity(vec1, vec2):
 
 #builds a dictionary of unique words from each "sentence" from the lists of words in sentences
 def build_semantic_descriptors(sentences):
+    '''Build and return co-occurrence semantic descriptors from a list of tokenized sentences.'''
     word_occ = {}
 
     for sentence in sentences:
-        unique_words = list(set(sentence))
+        unique = []
+        seen = {}
 
-        for word in unique_words:
+        for word in sentence:
             #initialize the word in the dictionary if not already present
-            if word not in word_occ:
-                word_occ[word] = {}
+            if word not in seen:
+                seen[word] = True
+                unique.append(word)
 
-            #count occurrences of duplicate words in the same sentence
-            for other in unique_words:
-                if other != word: 
-                    word_occ[word][other] = word_occ[word].get(other, 0) + 1
+        L = len(unique)
+        for i in range(L):
+            w1 = unique[i]
+            if w1 not in word_occ:
+                word_occ[w1] = {}
+
+            for j in range(i+1, L):
+                w2 = unique[j]
+                if w2 not in word_occ:
+                    word_occ[w2] = {}
+                    
+                word_occ[w1][w2] = word_occ[w1].get(w2, 0) + 1
+                word_occ[w2][w1] = word_occ[w2].get(w1, 0) + 1
 
     return word_occ
 
 #split text into sentences based on punctuation
 def split_into_sentences(text):
+    '''Split raw text into a list of tokenized sentences using punctuation as delimiters.'''
     sentences = []
     current = ""
 
@@ -66,11 +84,15 @@ def split_into_sentences(text):
         else:
             current += char
     
+    if current.strip():
+        sentences.append(current.strip().split())
+    
     return sentences
 
 #build a dictionary of unique words from files
 def build_semantic_descriptors_from_files(filenames):
-    punctuation_to_remove = [",", "-", "--", ":", ";"]
+    '''Build semantic descriptors from multiple text files by preprocessing and combining them.'''
+    punctuation_to_remove = [",", "-", "--", ":", ";", "(", ")", "[", "]", "\"", "'", "/", "_", "*"]
     descriptors = {}
 
     #read all files, concatenate their text and remove capitalization
@@ -79,9 +101,12 @@ def build_semantic_descriptors_from_files(filenames):
         with open(filename, "r", encoding="latin1") as f:
             file_text += " " + f.read().lower()
 
-    # Remove non-essential punctuation
+    # Remove non-essential punctuation and normalize spacing   <-- added clarifying comment
     for p in punctuation_to_remove:
         file_text = file_text.replace(p, " ")
+    
+    file_text = file_text.replace("-", " ")
+    file_text = file_text.replace("--", " ")
 
     #split text into sentences and build semantic descriptors
     sentences = split_into_sentences(file_text)
@@ -91,6 +116,7 @@ def build_semantic_descriptors_from_files(filenames):
 
 #find the most similar word from the choices based on the similarity function
 def most_similar_word(word, choices, semantic_descriptors, similarity_fn):
+    '''Return the choice word most semantically similar to the given word.'''
     #initialize best choice and similarity
     best_choice = choices[0]
     best_sim = -1
@@ -114,6 +140,7 @@ def most_similar_word(word, choices, semantic_descriptors, similarity_fn):
 
 #run similarity test on the given file
 def run_similarity_test(filename, semantic_descriptors, similarity_fn):
+    '''Run a similarity test file and return the percentage of correct answers.'''
     total = 0
     correct = 0
 
